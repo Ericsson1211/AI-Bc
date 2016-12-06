@@ -15,7 +15,7 @@ breed [ ghosts ghost ]
 ghosts-own  [ eaten? ]
 
 globals [
-  level         ;; current level
+          ;; current level
   score         ;; your score
   lives         ;; remaining lives
   extra-lives   ;; total number of extra lives you've won
@@ -34,7 +34,6 @@ globals [
 
 to new  ;; Observer Button
   clear-all
-  set level 2
   load-map
   set score 0
   set level-over? false
@@ -259,7 +258,7 @@ end
 GRAPHICS-WINDOW
 243
 10
-693
+692
 184
 10
 3
@@ -284,10 +283,10 @@ ticks
 30.0
 
 MONITOR
-291
-189
-401
-246
+111
+19
+221
+76
 Score
 score
 0
@@ -327,6 +326,17 @@ P
 NIL
 NIL
 0
+
+INPUTBOX
+48
+18
+99
+78
+Level
+2
+1
+0
+Number
 
 @#$#@#$#@
 ## WHAT IS IT?
