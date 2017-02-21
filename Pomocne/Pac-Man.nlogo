@@ -1,8 +1,10 @@
+extensions [gogo]
+
 turtles-own [ home-pos ]
 patches-own [ pellet-grid? ]  ;; true/false: is a pellet here initially?
 
 breed [ pellets pellet ]
-pellets-own[powerup? ]
+pellets-own [ powerup? ]
 
 breed [ bonuses bonus ]
 bonuses-own [ value countdown ]
@@ -10,28 +12,19 @@ bonuses-own [ value countdown ]
 breed [ pacmans pacman ]
 pacmans-own  [ new-heading ]
 
-breed [ghosts ghost]
-ghosts-own[eaten?]
+breed [ ghosts ghost ]
+ghosts-own  [ eaten? ]
 
-breed [ nodes node]
-nodes-own[visited? ]
 globals [
-          ;; current level
+  level         ;; current level
   score         ;; your score
   lives         ;; remaining lives
   extra-lives   ;; total number of extra lives you've won
   scared        ;; time until ghosts aren't scared (0 means not scared)
   level-over?   ;; true when a level is complete
-  dead?         ;; true when Pacman is still alive
+  dead?         ;; true when Pac-Man is loses a life
   next-bonus-in ;; time until next bonus is created
   tool which-ghost ;; variables needed to properly load levels 4 and above.
-  difficulty
-  i
-  pacmanx
-  pacmany
-  nodenumber
-  nodex
-  nodey
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -40,13 +33,14 @@ globals [
 
 to new  ;; Observer Button
   clear-all
+  gogo:open "COM7"
+  set level 1
   load-map
   set score 0
+  set lives 3
+  set extra-lives 0
+  set scared 0
   set level-over? false
-  reset-ticks
-  ask pacmans [ set new-heading 90 ]
-  set i 1
-  set nodenumber 2
 end
 
 to load-map  ;; Observer Procedure
@@ -54,23 +48,21 @@ to load-map  ;; Observer Procedure
   let maps ["pacmap1.csv" "pacmap2.csv" "pacmap3.csv"
             "pacmap4.csv" "pacmap5.csv"]
   let current-score score
+  let current-lives lives
   let current-extra-lives extra-lives
- ; let current-difficulty difficulty
+  let current-difficulty difficulty
 
   ifelse ((level - 1) < length maps)
   [ import-world item (level - 1) maps
     set score current-score
+    set lives current-lives
     set extra-lives current-extra-lives
-    set difficulty 4
+    set difficulty current-difficulty
     set dead? false
     ask pacmans
-    [ set home-pos list xcor ycor
-    set pacmanx xcor
-    set pacmany ycor]
-    create-nodes 1[
-      setxy pacmanx pacmany
-      ;set hidden? true
-    ]
+    [ set home-pos list xcor ycor ]
+    ask ghosts
+    [ set home-pos list xcor ycor ]
   ]
   [ set level 1
     load-map ]
@@ -80,179 +72,18 @@ end
 ;;; Runtime Procedures ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- ;depth first search
-to-report depth-first-search [x y nodenumber1]
-  ;let root-node node 2
-  let current-node node nodenumber1
-
-  let path []
-  let stack[]
-  show current-node
-  ask current-node[
-    set visited? true
-  ]
-  create-nodes 1 [
-    set xcor [x] of current-node
-    set ycor [y] of current-node
-    set size 0.5
-    set color green
-    set shape "circle"
-  ]
-  set path lput current-node path
-  if(current-node != pellet 1)[
-    ask nodes [
-      if([pcolor] of patch-at-heading-and-distance 90 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      if([pcolor] of patch-at-heading-and-distance 0 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      if([pcolor] of patch-at-heading-and-distance 270 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      if([pcolor] of patch-at-heading-and-distance 180 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      set current-node first stack
-      show stack
-      show current-node
-    ]
-;    foreach [ sort out-link-neighbors] of current-node[
-;      if not visited?[
-;        set stack lput self stack
-;        set nodenumber nodenumber + 1
-;        show stack
-;        set stack but-last stack
-;        set current-node first stack
-;
-;        ask current-node[
-;          set nodex xcor
-;          set nodey ycor
-;        ]
-;
-;      ]
-;
-;    ]
-    if(depth-first-search(nodex)(nodey)(nodenumber))[
-      report true
-    ]
-  ]
-
-    report false
-
-
-;  if ( number > 0 ) [
-;    create-pointers 1 [
-;      set xcor [x] of current-node
-;      set ycor [y] of current-node
-;      set size 0.5
-;      set color green
-;      set shape "circle"
-;    ]
-;  ]
-
-;  set stack lput root-node stack
-;  show stack
-;
-;  while[length stack > 0] [
-;    set current-node first stack
-;    set stack but-first stack
-;    show  current-node
-;    ifelse current-node = pellet 1 [
-;      ask pacmans [
-;        move-to turtle 1
-;      ]
-;      report false
-;
-;    ][
-;      foreach [sort out-link-neighbors] of current-node [
-;        ;show ?
-;        ;  ask ?[
-;        if not visited [
-;          set stack lput self stack
-;          set number number + 1
-;          show stack
-;          ; ]
-;        ]
-;      ]
-;      ask current-node [
-;        set visited true
-;      ]
-;    ]
-    ;    ask pacmans [
-    ;      if([pcolor] of patch-at-heading-and-distance 90 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;      if([pcolor] of patch-at-heading-and-distance 0 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;      if([pcolor] of patch-at-heading-and-distance 270 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;      if([pcolor] of patch-at-heading-and-distance 180 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;]
-
- ; ]
-
-
-
-  ; report false
-end
-
-to-report dfs
-  ifelse (depth-first-search (pacmanx)(pacmany)(2)) [
-    show pacmanx
-    show pacmany
-    show "searching for dots"
-    report true
-  ][
-    show "route finded"
-    report false
-  ]
-end
-
-
 to play  ;; Observer Forever Button
   ;; Only true at this point if you died and are trying to continue
-  ifelse(dfs)[
-    show "yes"
-  ]
-  [stop]
   if dead?
-  [stop]
-  every (1 - difficulty / 5)[
-    if ( level != 4 )[
-     ; dfs
-      ;ask pacmans
-    ;move_to_next_dot]
-    ]
-  ]
+  [ stop ]
+  if gogo:sensor 1 > 400
+  [set difficulty 7]
+  if gogo:sensor 1 < 400
+  [set difficulty 3]
+  every (1 - difficulty / 10)
+  [ move-pacman ]
+  every 0.25
+  [ update-bonuses ]
   if floor (score / 35000) > extra-lives
   [ set lives lives + 1
     set extra-lives extra-lives + 1 ]
@@ -270,49 +101,38 @@ to play  ;; Observer Forever Button
       [ setxy (item 0 home-pos) (item 1 home-pos)
         set heading 0
       ]
+      ask ghosts
+      [ setxy (item 0 home-pos) (item 1 home-pos)
+        set heading 0
+        set shape "ghost"
+      ]
       set dead? false
     ]
     stop
   ]
   if level-over?
   [ user-message word "Level Complete!\nScore: " score  ;; \n means start a new line
+    set level level + 1
+    load-map
+    set level-over? false
     stop ]
-
-;  every next-bonus-in
-;  [ make-bonus ]
+  every 1.6 * (1 - difficulty / 10)
+  [ move-ghosts ]
+  every next-bonus-in
+  [ make-bonus ]
   display
 end
 
-to move_to_next_dot;Reflexny agent
+to move-pacman  ;; Observer Procedure
   ask pacmans
   [ ;; move forward unless blocked by wall
     let old-heading heading
     set heading new-heading
-    if[pcolor] of patch-ahead 1 = black[
-      ifelse any? pellets-on patch-ahead 1[
-        fd 1
-        consume
-      ]
-      [set i i + 1]
-    ]
-    ;if[pcolor] of patch-ahead 1 != black
-    ;[
-    ask patch-at-heading-and-distance 90 i [
-      if any? pellets-here
-        [ move-right ]
-    ]
-    ask patch-at-heading-and-distance 0 i [
-      if any? pellets-here
-        [ move-up ]
-    ]
-    ask patch-at-heading-and-distance 180 i [
-      if any? pellets-here
-        [ move-down ]
-    ]
-    ask patch-at-heading-and-distance 270 i [
-      if any? pellets-here
-        [ move-left ]
-    ]
+    if [pcolor] of patch-ahead 1 != black
+    [ set heading old-heading ]
+    if [pcolor] of patch-ahead 1 = black
+    [ fd 1 ]
+    consume
     ;; Level ends when all pellets are eaten
     if not any? pellets
     [ set level-over? true ]
@@ -320,65 +140,195 @@ to move_to_next_dot;Reflexny agent
     ifelse shape = "pacman"
     [ set shape "pacman open" ]
     [ set shape "pacman" ]
-    ;;Set score by Time
-    if not any? pellets-here
-    [set score score - 1 ]
-    ; if not any? pellets-on patch-ahead 1
-    ; [set i i + 1]
-    if score <= -10
-    [set dead? true]
   ]
 end
 
 to consume  ;; Pacman Procedure
+  ;; Consume Bonuses
+  if any? bonuses-here
+  [ set score score + sum [value] of bonuses-here
+    ask bonuses-here [ die ] ]
+
   ;; Consume Pellets
   if any? pellets-here
-;  [ ifelse [powerup?] of one-of pellets-here
-;    [ set score score + 500
-;      set scared 40
-;      ask ghosts
-;      [ if not eaten?
-;        [ set shape "scared" ] ]
-;    ]
-    [ set score score + 10 ]
-    ask pellets-here [ die ] ;]
+  [ ifelse [powerup?] of one-of pellets-here
+    [ set score score + 500
+      set scared 40
+      ask ghosts
+      [ if not eaten?
+        [ set shape "scared" ] ]
+    ]
+    [ set score score + 100 ]
+    ask pellets-here [ die ] ]
+
+  ;; Ghosts
+  if any? ghosts-here with [not eaten?]
+  [ ifelse scared = 0
+    [ set dead? true ]
+    [ ask ghosts-here with [not eaten?]
+      [ set eaten? true
+        set shape "eyes"
+        set score score + 500 ]
+    ]
+  ]
 end
 
+to update-bonuses  ;; Observer Procedure
+  ask bonuses
+  [ set heading heading + 13
+    set countdown countdown - 1
+    if countdown = 0
+    [ die ] ]
+end
+
+to move-ghosts  ;; Observer Procedure
+  ask ghosts
+  [ ifelse eaten?
+    [ if [pcolor] of patch-at 0 1 = gray
+      [ set eaten? false
+        set shape "ghost" ]
+      return-home
+    ]
+    [ choose-heading ]
+    fd 1
+  ]
+  if scared > 0
+  [ set scared scared - 1
+    ifelse scared < 10 and scared mod 2 = 0
+    [ ask ghosts with [not eaten?]
+      [ set shape "ghost" ] ]
+    [ ask ghosts with [not eaten?]
+      [ set shape "scared" ] ]
+    if scared = 0
+    [ ask ghosts with [not eaten?]
+      [ set shape "ghost" ]
+    ]
+  ]
+end
+
+to return-home  ;; Ghosts Procedure
+  let dirs clear-headings
+  let new-dirs remove opposite heading dirs
+  let home-dir 0
+  if pcolor != gray
+    [ set home-dir towards one-of patches with [pcolor = gray] ]
+  let home-path 90 * round (home-dir / 90)
+
+  if length new-dirs = 1
+  [ set heading item 0 new-dirs ]
+  if length new-dirs > 1
+  [ ifelse position home-path new-dirs != false
+    [ set heading home-path ]
+    [ set heading one-of new-dirs ]
+  ]
+end
+
+to choose-heading  ;; Ghosts Procedure
+  let dirs clear-headings
+  let new-dirs remove opposite heading dirs
+  let pacman-dir false
+
+  if length dirs = 1
+  [ set heading item 0 dirs ]
+  if length dirs = 2
+  [ ifelse see-pacman item 0 dirs
+    [ set pacman-dir item 0 dirs ]
+    [ ifelse see-pacman item 1 dirs
+      [ set pacman-dir item 1 dirs ]
+      [ set heading one-of new-dirs ]
+    ]
+  ]
+  if length dirs = 3
+  [ ifelse see-pacman item 0 dirs
+    [ set pacman-dir item 0 dirs ]
+    [ ifelse see-pacman item 1 dirs
+      [ set pacman-dir item 1 dirs ]
+      [ ifelse see-pacman item 2 dirs
+        [ set pacman-dir item 2 dirs ]
+        [ set heading one-of new-dirs ]
+      ]
+    ]
+  ]
+  if length dirs = 4
+  [ ifelse see-pacman item 0 dirs
+    [ set pacman-dir item 0 dirs ]
+    [ ifelse see-pacman item 1 dirs
+      [ set pacman-dir item 1 dirs ]
+      [ ifelse see-pacman item 2 dirs
+        [ set pacman-dir item 2 dirs ]
+        [ ifelse see-pacman item 3 dirs
+          [ set pacman-dir item 3 dirs ]
+          [ set heading one-of new-dirs ]
+        ]
+      ]
+    ]
+  ]
+  if pacman-dir != false
+  [ ifelse scared = 0
+    [ set heading pacman-dir ]
+    [ set dirs remove pacman-dir dirs
+      set heading one-of dirs
+    ]
+  ]
+end
+
+to-report clear-headings ;; ghosts procedure
+  let dirs []
+  if [pcolor] of patch-at 0 1 != blue
+  [ set dirs lput 0 dirs ]
+  if [pcolor] of patch-at 1 0 != blue
+  [ set dirs lput 90 dirs ]
+  if [pcolor] of patch-at 0 -1 != blue
+  [ set dirs lput 180 dirs ]
+  if [pcolor] of patch-at -1 0 != blue
+  [ set dirs lput 270 dirs ]
+  report dirs
+end
+
+to-report opposite [dir]
+  ifelse dir < 180
+  [ report dir + 180 ]
+  [ report dir - 180 ]
+end
+
+to-report see-pacman [dir] ;; ghosts procedure
+  let saw-pacman? false
+  let p patch-here
+  while [[pcolor] of p = black]
+  [ ask p
+    [ if any? pacmans-here
+      [ set saw-pacman? true ]
+      set p patch-at sin dir cos dir ;; next patch in direction dir
+    ]
+    ;; stop looking if you loop around the whole world
+    if p = patch-here [ report saw-pacman? ]
+  ]
+  report saw-pacman?
+end
+
+to make-bonus ;; Observer Procedure
+  ifelse next-bonus-in = 0
+  [ set next-bonus-in 10 ]
+  [ let bonus-patch one-of patches with [pellet-grid? and
+                                                not any? bonuses-here and
+                                                not any? pellets-here]
+    if bonus-patch != nobody
+    [ ask bonus-patch
+      [ sprout-bonuses 1
+        [ set shape "star"
+          set heading 0
+          set color random 14 * 10 + 5
+          set value (random 10 + 1) * 100
+          set countdown random 200 + 50 ] ]
+      set next-bonus-in 5 + random 10 ] ]
+end
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Interface Procedures ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-to-report can-move-up
-   ifelse ([pcolor] of patch-at-heading-and-distance 0 1 = black)[
-     report true]
-  [
-   report false
-  ]
 
-end
-to-report can-move-right
-  ifelse ([pcolor] of patch-at-heading-and-distance 90 1 = black)[
-    report true
-  ][
-    report false
-  ]
-end
-to-report can-move-left
-   ifelse ([pcolor] of patch-at-heading-and-distance 270 1 = black)[
-     report true
-   ][
-     report false
-   ]
-end
-to-report can-move-down
-   ifelse ([pcolor] of patch-at-heading-and-distance 180 1 = black)[
-     report true
-   ][
-     report false
-   ]
-end
 to move-up
-    ask pacmans [ set new-heading 0 ]
+  ask pacmans [ set new-heading 0 ]
 end
 
 to move-right
@@ -393,16 +343,14 @@ to move-left
   ask pacmans [ set new-heading 270 ]
 end
 
-; Copyright 2001 Uri Wilensky.
-; See Info tab for full copyright and license.
 @#$#@#$#@
 GRAPHICS-WINDOW
 243
 10
-398
-166
--1
--1
+488
+188
+4
+3
 21.0
 1
 10
@@ -413,26 +361,26 @@ GRAPHICS-WINDOW
 1
 0
 1
+-4
+4
 -3
 3
--3
-3
-0
-0
+1
+1
 0
 ticks
 30.0
 
 MONITOR
-111
-19
-221
-76
+11
+41
+121
+86
 Score
 score
 0
 1
-14
+11
 
 BUTTON
 11
@@ -468,16 +416,110 @@ NIL
 NIL
 0
 
-INPUTBOX
-48
-18
-99
-78
-Level
-4.0
+BUTTON
+88
+180
+143
+213
+Up
+move-up
+NIL
 1
+T
+OBSERVER
+NIL
+I
+NIL
+NIL
 0
-Number
+
+BUTTON
+143
+213
+198
+246
+Right
+move-right
+NIL
+1
+T
+OBSERVER
+NIL
+L
+NIL
+NIL
+0
+
+BUTTON
+88
+213
+143
+246
+Down
+move-down
+NIL
+1
+T
+OBSERVER
+NIL
+K
+NIL
+NIL
+0
+
+BUTTON
+33
+213
+88
+246
+Left
+move-left
+NIL
+1
+T
+OBSERVER
+NIL
+J
+NIL
+NIL
+0
+
+MONITOR
+121
+41
+176
+86
+Level
+level
+0
+1
+11
+
+MONITOR
+176
+41
+231
+86
+Lives
+lives
+0
+1
+11
+
+SLIDER
+11
+123
+231
+156
+difficulty
+difficulty
+0
+7
+4
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -919,8 +961,9 @@ false
 0
 Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
+
 @#$#@#$#@
-NetLogo 6.0
+NetLogo 5.3.1
 @#$#@#$#@
 new
 @#$#@#$#@
@@ -937,6 +980,7 @@ true
 0
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
+
 @#$#@#$#@
 0
 @#$#@#$#@
