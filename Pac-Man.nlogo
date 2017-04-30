@@ -1,5 +1,5 @@
 turtles-own [ home-pos ]
-patches-own [ pellet-grid? ]  ;; true/false: is a pellet here initially?
+patches-own [ pellet-grid?]  ;; true/false: is a pellet here initially?
 
 breed [ pellets pellet ]
 pellets-own[powerup? ]
@@ -14,9 +14,10 @@ breed [ghosts ghost]
 ghosts-own[eaten?]
 
 breed [ nodes node]
-nodes-own[visited? ]
+nodes-own [visited?]
+
 globals [
-          ;; current level
+  ;; current level
   score         ;; your score
   lives         ;; remaining lives
   extra-lives   ;; total number of extra lives you've won
@@ -30,8 +31,14 @@ globals [
   pacmanx
   pacmany
   nodenumber
+  numberofnodes
   nodex
   nodey
+  path
+  x-range
+  y-range
+  current-patch
+  whattoreport
 ]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;
@@ -47,16 +54,17 @@ to new  ;; Observer Button
   ask pacmans [ set new-heading 90 ]
   set i 1
   set nodenumber 2
+  set numberofnodes 2
+  set path []
 end
 
 to load-map  ;; Observer Procedure
-  ;; Filenames of Level Files
+             ;; Filenames of Level Files
   let maps ["pacmap1.csv" "pacmap2.csv" "pacmap3.csv"
-            "pacmap4.csv" "pacmap5.csv"]
+    "pacmap4.csv" "pacmap5.csv"]
   let current-score score
   let current-extra-lives extra-lives
- ; let current-difficulty difficulty
-
+  ; let current-difficulty difficulty
   ifelse ((level - 1) < length maps)
   [ import-world item (level - 1) maps
     set score current-score
@@ -65,12 +73,16 @@ to load-map  ;; Observer Procedure
     set dead? false
     ask pacmans
     [ set home-pos list xcor ycor
-    set pacmanx xcor
-    set pacmany ycor]
-    create-nodes 1[
-      setxy pacmanx pacmany
-      ;set hidden? true
+      set pacmanx xcor
+      set pacmany ycor]
+    create-nodes 1 [
+      set xcor pacmanx
+      set ycor pacmany
+      set nodex pacmanx
+      set nodey pacmany
+      set hidden? true
     ]
+
   ]
   [ set level 1
     load-map ]
@@ -80,177 +92,264 @@ end
 ;;; Runtime Procedures ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 
- ;depth first search
+;depth first search
+
+
 to-report depth-first-search [x y nodenumber1]
   ;let root-node node 2
   let current-node node nodenumber1
 
-  let path []
+
   let stack[]
-  show current-node
-  ask current-node[
-    set visited? true
-  ]
-  create-nodes 1 [
-    set xcor [x] of current-node
-    set ycor [y] of current-node
-    set size 0.5
-    set color green
-    set shape "circle"
-  ]
-  set path lput current-node path
-  if(current-node != pellet 1)[
-    ask nodes [
-      if([pcolor] of patch-at-heading-and-distance 90 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      if([pcolor] of patch-at-heading-and-distance 0 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      if([pcolor] of patch-at-heading-and-distance 270 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      if([pcolor] of patch-at-heading-and-distance 180 1 = black ) [
-        if not visited?[
-          set stack lput nodenumber stack
-          set nodenumber nodenumber + 1
-          show stack
-        ]
-      ]
-      set current-node first stack
-      show stack
-      show current-node
-    ]
-;    foreach [ sort out-link-neighbors] of current-node[
-;      if not visited?[
-;        set stack lput self stack
-;        set nodenumber nodenumber + 1
-;        show stack
-;        set stack but-last stack
-;        set current-node first stack
-;
-;        ask current-node[
-;          set nodex xcor
-;          set nodey ycor
-;        ]
-;
-;      ]
-;
-;    ]
-    if(depth-first-search(nodex)(nodey)(nodenumber))[
-      report true
-    ]
-  ]
 
-    report false
+  ; if(not any? nodes-at x y)[
 
-
-;  if ( number > 0 ) [
-;    create-pointers 1 [
-;      set xcor [x] of current-node
-;      set ycor [y] of current-node
-;      set size 0.5
-;      set color green
-;      set shape "circle"
-;    ]
+  ; ]
+;  create-nodes 1 [
+;    set xcor x ;[x] of current-node
+;    set ycor y ;[y] of current-node
+;    set size 0.5
+;    set color green
+;    set shape "circle"
+;    set visited? true
 ;  ]
 
-;  set stack lput root-node stack
-;  show stack
-;
-;  while[length stack > 0] [
-;    set current-node first stack
-;    set stack but-first stack
-;    show  current-node
-;    ifelse current-node = pellet 1 [
-;      ask pacmans [
-;        move-to turtle 1
-;      ]
-;      report false
-;
-;    ][
-;      foreach [sort out-link-neighbors] of current-node [
-;        ;show ?
-;        ;  ask ?[
-;        if not visited [
-;          set stack lput self stack
-;          set number number + 1
-;          show stack
-;          ; ]
-;        ]
-;      ]
-;      ask current-node [
-;        set visited true
-;      ]
-;    ]
-    ;    ask pacmans [
-    ;      if([pcolor] of patch-at-heading-and-distance 90 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;      if([pcolor] of patch-at-heading-and-distance 0 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;      if([pcolor] of patch-at-heading-and-distance 270 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;      if([pcolor] of patch-at-heading-and-distance 180 1 = black ) [
-    ;        set stack lput number stack
-    ;        set number number + 1
-    ;        show stack
-    ;      ]
-    ;]
+  show "current-node"
+  show current-node
+  set path lput current-node path
+  ifelse(current-node != pellet 1)[
+    ask current-node [
+      set visited? true
+      if(can-move-left?)[;[pcolor] of patch-at (x - 1) y = black ) [
+       ; if (visited? = 0)[
+        if(not any? nodes-at (x - 1)(y) and [pcolor] of patch-at (x - 1)(y) = black)[
+          set numberofnodes numberofnodes + 1
+          set stack lput numberofnodes stack
+          show x
+          show y
+          hatch-nodes 1
+          [
+            set xcor x - 1 ;[x] of current-node
+            set ycor y ;[y] of current-node
+            set size 0.5
+            set color green
+            set shape "circle"
+            set visited? false
+           ; set hidden? true
+         ; ]
+        ]
+          ]
+      ]
+      if(can-move-up?)[;[pcolor] of patch-at x (y - 1) = black ) [
+       ; if (visited? = 0)[
+        if(not any? nodes-at (x)(y - 1) and [pcolor] of patch-at (x)(y - 1) = black)[
+          set numberofnodes numberofnodes + 1
+          set stack lput numberofnodes stack
 
- ; ]
+          hatch-nodes 1
+          [
+            set xcor x  ;[x] of current-node
+            set ycor y - 1;[y] of current-node
+            set size 0.5
+            set color green
+            set shape "circle"
+            set visited? false
+            ;set hidden? true
+        ;  ]
+        ]
+          ]
+      ]
+      if(can-move-right?)[;[pcolor] of patch-at x (y + 1) = black ) [
+       ; if (visited? = 0)[
+        if(not any? nodes-at (x)(y + 1) and [pcolor] of patch-at (x)(y + 1) = black)[
+          set numberofnodes numberofnodes + 1
+          set stack lput numberofnodes stack
+
+          hatch-nodes 1
+          [
+            set xcor x ;[x] of current-node
+            set ycor y + 1;[y] of current-node
+            set size 0.5
+            set color green
+            set shape "circle"
+            set visited? false
+            ;set hidden? true
+      ;    ]
+          ]
+        ]
+      ]
+      if(can-move-down?)[;[pcolor] of patch-at (x + 1) y = black ) [
+       ; if (visited? = 0)[
+        if(not any? nodes-at (x + 1)(y) and [pcolor] of patch-at (x + 1)(y) = black)[
+          set numberofnodes numberofnodes + 1
+          set stack lput numberofnodes stack
+
+          hatch-nodes 1
+          [
+            set xcor x + 1 ;[x] of current-node
+            set ycor y ;[y] of current-node
+            set size 0.5
+            set color green
+            set shape "circle"
+            set visited? false
+            ;set hidden? true
+       ;   ]
+          ]
+        ]
+      ]
+
+      show "stack"
+      show stack
+      show "path"
+      show path
+      set current-node first stack
+      show current-node
+      set nodenumber current-node
+      show "nodenumber"
+      show nodenumber
+      ask node nodenumber[
+        show xcor
+        show ycor
+        set nodex xcor
+        set nodey ycor
+        set color red
+        set hidden? false
+      ]
 
 
 
-  ; report false
-end
 
-to-report dfs
-  ifelse (depth-first-search (pacmanx)(pacmany)(2)) [
-    show pacmanx
-    show pacmany
-    show "searching for dots"
+    ]
+    if(depth-first-search (nodex)(nodey)(nodenumber))[
+        report true
+      ]
     report true
-  ][
-    show "route finded"
+  ][show "no route"
+    report false]
+  ;    while [any? patches with [not visited?]]
+  ;    [
+  ;      ask patches with [not visited?]
+  ;      [
+  ;        foreach children-patches
+  ;        foreach [ sort out-link-neighbors] of current-node[
+  ;          if not visited?[
+  ;            set stack lput self stack
+  ;            set nodenumber nodenumber + 1
+  ;            show stack
+  ;            set stack but-last stack
+  ;            set current-node first stack
+  ;
+  ;            ask current-node[
+  ;              set nodex xcor
+  ;              set nodey ycor
+  ;            ]
+  ;
+  ;          ]
+  ;
+  ;        ]
+
+
+  ;  if(depth-first-search(nodex)(nodey)(nodenumber))[
+  ;    report true
+  ;  ]
+
+  if(length stack > 4)[
     report false
   ]
+  report false
 end
 
+to dfs
+  ;  show pacmanx
+  ;  show pacmany
+  show numberofnodes
+  show nodenumber
+  set current-patch turtle 0
+  ifelse (depth-first-search (pacmanx)(pacmany) 2) [
+    show "searching for dots"
+  ][
+    show "route finded"
+  ]
+end
+
+;to-report depth-first-search [x y]
+;  let stack[]
+;  show current-patch
+;  ask current-patch
+;
+;  [
+;    show x
+;  show y
+;
+;    while[any? pellets-here ]
+;    [
+;      ifelse(length stack > 0 and length stack < 5)
+;      [
+;        ifelse ([pcolor] of patch-at (x - 1) (y) = black and patch-at (x - 1)(y) )[
+;          set stack lput patch (x - 1) y stack
+;          set current-patch patch (x - 1) y
+;          hatch-nodes 1 [
+;            set xcor x - 1 ;[x] of current-node
+;            set ycor y ;[y] of current-node
+;            set size 0.5
+;            set color green
+;            set shape "circle"
+;            set visited? false
+;            set hidden? true
+;          ]
+;
+;          if(depth-first-search(x - 1)(y))[
+;            set whattoreport "true"
+;          ]
+;        ][
+;          ifelse ([pcolor] of patch-at (x) (y + 1) = black)[; [[pcolor] = black and not visited?]][
+;            set stack lput patch (x) (y + 1) stack
+;            set current-patch patch x (y + 1)
+;            if(depth-first-search(x)(y + 1))[
+;              set whattoreport "true"
+;            ]
+;          ][
+;            ifelse ([pcolor] of patch-at (x + 1) (y) = black)[; [[pcolor] = black and not visited?]][
+;              set stack lput patch (x + 1) y stack
+;              set current-patch patch (x + 1) y
+;              if(depth-first-search(x + 1)(y))[
+;                set whattoreport "true"
+;              ]
+;            ][
+;              if ([pcolor] of patch-at (x) (y - 1) = black)[; [[pcolor] = black and not visited?]][
+;                set stack lput patch x (y - 1)  stack
+;                set current-patch patch x (y - 1)
+;                if(depth-first-search(x)(y - 1))[
+;                  set whattoreport "true"
+;                ]
+;                ]
+;              ]
+;
+;            ]
+;          ]
+;        ]
+;        [set whattoreport "false"]
+;      ]
+;  ]
+;  ifelse(whattoreport = "true")[
+;    report true
+;  ]
+;  [
+;    report false
+;  ]
+;
+;end
 
 to play  ;; Observer Forever Button
-  ;; Only true at this point if you died and are trying to continue
-  ifelse(dfs)[
-    show "yes"
-  ]
-  [stop]
+         ;; Only true at this point if you died and are trying to continue
+  dfs
   if dead?
   [stop]
   every (1 - difficulty / 5)[
     if ( level != 4 )[
-     ; dfs
-      ;ask pacmans
-    ;move_to_next_dot]
+      ; dfs
+      ;      ask pacmans
+      ;   move_to_next_dot]
     ]
   ]
   if floor (score / 35000) > extra-lives
@@ -272,14 +371,14 @@ to play  ;; Observer Forever Button
       ]
       set dead? false
     ]
-    stop
+  stop
   ]
   if level-over?
   [ user-message word "Level Complete!\nScore: " score  ;; \n means start a new line
     stop ]
 
-;  every next-bonus-in
-;  [ make-bonus ]
+  ;  every next-bonus-in
+  ;  [ make-bonus ]
   display
 end
 
@@ -331,54 +430,54 @@ to move_to_next_dot;Reflexny agent
 end
 
 to consume  ;; Pacman Procedure
-  ;; Consume Pellets
+            ;; Consume Pellets
   if any? pellets-here
-;  [ ifelse [powerup?] of one-of pellets-here
-;    [ set score score + 500
-;      set scared 40
-;      ask ghosts
-;      [ if not eaten?
-;        [ set shape "scared" ] ]
-;    ]
+  ;  [ ifelse [powerup?] of one-of pellets-here
+  ;    [ set score score + 500
+  ;      set scared 40
+  ;      ask ghosts
+  ;      [ if not eaten?
+  ;        [ set shape "scared" ] ]
+  ;    ]
     [ set score score + 10 ]
-    ask pellets-here [ die ] ;]
+  ask pellets-here [ die ] ;]
 end
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Interface Procedures ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-to-report can-move-up
-   ifelse ([pcolor] of patch-at-heading-and-distance 0 1 = black)[
-     report true]
+to-report can-move-up?
+  ifelse ([pcolor] of patch-at-heading-and-distance 0 1 = blue)[
+    report false]
   [
-   report false
+    report true
   ]
 
 end
-to-report can-move-right
-  ifelse ([pcolor] of patch-at-heading-and-distance 90 1 = black)[
-    report true
-  ][
+to-report can-move-right?
+  ifelse ([pcolor] of patch-at-heading-and-distance 90 1 = blue)[
     report false
+  ][
+    report true
   ]
 end
-to-report can-move-left
-   ifelse ([pcolor] of patch-at-heading-and-distance 270 1 = black)[
-     report true
-   ][
-     report false
-   ]
+to-report can-move-left?
+  ifelse ([pcolor] of patch-at-heading-and-distance 270 1 = blue)[
+    report false
+  ][
+    report true
+  ]
 end
-to-report can-move-down
-   ifelse ([pcolor] of patch-at-heading-and-distance 180 1 = black)[
-     report true
-   ][
-     report false
-   ]
+to-report can-move-down?
+  ifelse ([pcolor] of patch-at-heading-and-distance 180 1 = blue)[
+    report false
+  ][
+    report true
+  ]
 end
 to move-up
-    ask pacmans [ set new-heading 0 ]
+  ask pacmans [ set new-heading 0 ]
 end
 
 to move-right
@@ -399,8 +498,8 @@ end
 GRAPHICS-WINDOW
 243
 10
-398
-166
+440
+208
 -1
 -1
 21.0
@@ -411,12 +510,12 @@ GRAPHICS-WINDOW
 1
 0
 1
-0
 1
--3
-3
--3
-3
+1
+-4
+4
+-4
+4
 0
 0
 0
@@ -474,7 +573,7 @@ INPUTBOX
 99
 78
 Level
-4.0
+5.0
 1
 0
 Number

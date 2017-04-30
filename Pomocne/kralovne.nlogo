@@ -1,261 +1,141 @@
-breed [vertices vertex]
+to-report add-queen [ lst n ]
+  report lput n lst
+end
+
+to-report threatens [ i j m n ]
+  report (j = n) or (i + j = m + n) or (i - j = m - n)
+end
+
+to-report safe [ lst n ]
+  ;; Vypíše možnosti v zmysle [č,č,č,č...] ktoré reprezentujú riadky
+  ;; Stlpcové pozície sú 1..8
+  let m ((length lst) + 1)
+  let i 1
+  foreach lst [
+    if (threatens i ? m n) [ report false ]
+    set i (i + 1)
+  ]
+  report true
+end
+
+to-report queen-solutions [ n num-rows ]
+  if-else (n = 0)
+    [ report [ [] ] ]
+    [ let lst (queen-solutions (n - 1) num-rows )
+      let res []
+      foreach lst [
+        let i 1
+        while [i <= num-rows] [
+          if (safe ? i) [ set res (lput (add-queen ? i) res) ]
+          set i (i + 1)
+        ]
+      ]
+      report res
+    ]
+end
+
+to-report all-queen-solutions [ n ]
+  report (queen-solutions n n)
+end
 
 globals [
-  highlighted-vertices   ;; auxiliary variable for adding/removing edges
-  id-highlighted         ;; -||-, represents the other end of the edge
-  FIFO                   ;; data structure for BFS algorithm
-  LIFO                   ;; data structure for DFS algorithm
+  queens
+  scan
+]
+
+;; Riešenie button
+to riesenie
+  ;; zmaže staré Turtle
+  ask turtles [ die ]
+
+  ;; pattern pre šachovnicu
+  ask patches [
+    if-else ((pxcor - pycor) mod 2 = 0) [ set pcolor white ] [ set pcolor black ]
   ]
 
-turtles-own [
-  root?                  ;; whether the vertex is root or not
+  ;; Pri prvom stlačení vykalkuluje počet možných riešení
+  if (queens = 0) [
+
+    reset-timer
+    set queens (all-queen-solutions num-queens)
+    type (length queens) print " solutions"
+    type timer print " seconds taken"
+    set scan 0
   ]
 
+  ;; Stále ked sa stlačí riešenie tak bude vyhadzovať nové resp. iné možné
+  let q (item scan queens)
+  set scan (scan + 1)
+  type "solution #" type scan type ": " print q
+  if (scan = (length queens)) [ set scan 0 ]
 
-to setup
-  ca
-  set highlighted-vertices 0
-  set id-highlighted 0
-  set FIFO []
-  set LIFO []
-  ask patches [set pcolor green + 2]
-end
-
-to go-BFS
-  if not any? vertices [
-    user-message "You need first to create a graph to do this activity"
-    stop
+  ;; Riešenie sa zobrazí položením turtlov na šachovnicu
+  ;; upraví koordinácie
+  let i 0
+  foreach q [
+    crt 1 [
+      setxy (i) (world-width - ?)
+      set shape "crown"
+      set color red
+      set size 0.8
     ]
-  if not any? turtles with [root?] [
-    user-message "Choose root first"
-    stop
+    set i (i + 1)
   ]
-  reset
-  wait delay
-  set FIFO lput turtles with [root?] FIFO
-  ask first FIFO [set color orange wait delay]
-  run-BFS
 end
 
-;Breadth-first search
-to run-BFS
-  ask first FIFO [
-    foreach sort-by [[who] of ?1 < [who] of ?2] link-neighbors with [color != orange][
-      ask ? [ 
-        set color orange
-        set FIFO lput ? FIFO 
-        ask first FIFO [
-          ask link-with ? [
-            set color blue 
-            set thickness 1 
-            output-print (word ([who] of end1 + 1) " -> " ([who] of end2 + 1))
-          ]
-        ]
-        wait delay] 
-    ]
-  ]
-  set FIFO but-first FIFO
-  if not empty? FIFO [run-BFS]
-end
-
-to go-DFS
-  if not any? vertices [
-    user-message "You need first to create a graph to do this activity"
-    stop
-    ]
-  if not any? turtles with [root?] [
-    user-message "Choose root first"
-    stop
-  ]
-  reset
-  wait delay
-  set LIFO lput turtles with [root?] LIFO
-  ask last LIFO [set color orange wait delay]
-  run-DFS
-end
-
-;Depth-first search
-to run-DFS
-  ask last LIFO [
-    if not any? link-neighbors with [color != orange] [set LIFO but-last LIFO stop]
-    let i min-one-of (link-neighbors with [color != orange]) [who]
-    ask min-one-of (link-neighbors with [color != orange]) [who]
-    [ 
-      set color orange
-      set LIFO lput i LIFO
-      ask item ((position i LIFO) - 1) LIFO [
-        ask link-with i [
-          set color blue 
-          set thickness 1
-          output-print (word ([who] of end1 + 1) " -> " ([who] of end2 + 1))
-        ]
-      ]
-      wait delay] 
-  ]
-  if not empty? LIFO [run-DFS]
-end
-
+;; RESET button
 to reset
-  clear-output
-  set FIFO []
-  set LIFO []
-  set highlighted-vertices 0
-  set id-highlighted 0
-  ask links [set thickness 0 set color grey]
-  ask turtles with [root?] [set color blue + 2]
-  ask turtles with [root? = false] [set color yellow set size 3 set root? false]
+  clear-all
+  reset-ticks
 end
 
-to add-vertex
-  if mouse-down? [
-    create-vertices 1 [
-      set shape "vertex"
-      set size 3
-      set color yellow
-      set label who + 1
-      set label-color white
-      set root? false
-      setxy mouse-xcor mouse-ycor
-      while [mouse-down?] [
-        setxy mouse-xcor mouse-ycor
-        display
-      ]
-    ]
-  ]
+to update
+
 end
 
-to add-edge
-  if count vertices < 2[
-    user-message "You need to have at least 2 vertices"
-    stop
-    ]
-  if mouse-down? [
-    let candidate min-one-of turtles [distancexy mouse-xcor mouse-ycor]
-    if [distancexy mouse-xcor mouse-ycor] of candidate < 2 [
-      ask candidate [
-        if highlighted-vertices = 0 [set id-highlighted who]
-        if color = yellow [
-          set highlighted-vertices highlighted-vertices + 1
-          set color red
-          if highlighted-vertices = 2 [
-            create-link-with turtle id-highlighted
-            set highlighted-vertices 0
-            ask turtles with [color = red] [set color yellow]
-          ]
-        ]
-      ]
-      while[mouse-down?] [display]
-    ]
-  ]
+;; Setup nastaví veľkosť hracieho poľa
+to setup
+  resize-world min-pxcor velkost min-pycor velkost
 end
 
-to remove-vertex
-  if not any? vertices [
-    user-message "There are no vertices"
-    stop
-    ]
-  if mouse-down? [
-    let candidate min-one-of turtles [distancexy mouse-xcor mouse-ycor]
-    if [distancexy mouse-xcor mouse-ycor] of candidate < 2 [
-      ask candidate [
-        set color red
-        ifelse user-yes-or-no? "Remove this vertex?" [die] [set color yellow]
-      ]
-      while [mouse-down?] [
-        display
-      ]
-    ]
+to-report sequence [ m n ]
+  let res []
+  let i m
+  while [i <= n] [
+    set res (lput i res)
+    set i (i + 1)
   ]
+  report res
 end
 
-to remove-edge
-  if not any? links [
-    user-message "There are no edges"
-    stop
-    ]
-  if mouse-down? [
-    let candidate min-one-of turtles [distancexy mouse-xcor mouse-ycor]
-    if [distancexy mouse-xcor mouse-ycor] of candidate < 2 [
-      ask candidate [
-        if highlighted-vertices = 0 [set id-highlighted who]
-        if color = yellow [
-          set highlighted-vertices highlighted-vertices + 1
-          set color red
-          if highlighted-vertices = 2 [
-            ifelse is-link? link id-highlighted who [
-              ifelse user-yes-or-no? "Remove this edge?" [
-                ask link id-highlighted who [die]
-                set highlighted-vertices 0
-                ask turtles with [color = red] [set color yellow]
-              ]
-              [
-                set highlighted-vertices 0
-                ask turtles with [color = red] [set color yellow]
-                stop]
-            ]
-            
-            [
-              set highlighted-vertices 0
-              ask turtles with [color = red] [set color yellow]
-              stop]
-            
-          ]
-        ]
-      ]
-      while[mouse-down?] [display]
-    ]
-  ]
+to-report sieve [ lst maxn ]
+  ;; assume lst is not empty and that first element is prime (we will start with 2)
+  let fst (first lst)
+  if-else (fst * fst > maxn)
+    [ report lst ]
+    [ let a (filter [? mod fst > 0] lst)
+      let b (sieve a maxn)
+      report (fput fst b) ]
 end
 
-to relocate-vertex
-  if not any? vertices [
-    user-message "There are no vertices"
-    stop
-    ]
-  if mouse-down? [
-    let candidate min-one-of turtles [distancexy mouse-xcor mouse-ycor]
-    if [distancexy mouse-xcor mouse-ycor] of candidate < 2 [
-      watch candidate
-      while [mouse-down?] [
-        display
-        ask subject [ setxy mouse-xcor mouse-ycor ]
-      ]
-      reset-perspective
-    ]
-  ]
+to-report latitude [ n ]
+  report ((n - 1) mod world-width)
 end
 
-to pick-root
-  if not any? vertices [
-    user-message "You need first to add at least one vertex"
-    stop
-    ]
-  if mouse-down? [
-    let candidate min-one-of turtles [distancexy mouse-xcor mouse-ycor]
-    if [distancexy mouse-xcor mouse-ycor] of candidate < 2 [
-      ask candidate [
-        ask turtles with [size = 4] [set size 3 set color yellow set root? false]
-        set size 4
-        set color blue + 2
-        set root? true
-      ]
-      while [mouse-down?] [
-        display
-      ]
-    ]
-  ]
+to-report longitude [ n ]
+  report ((world-width - 1) - floor ((n - 1) / world-width))
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-243
+148
+19
+563
+455
+-1
+-1
+40.5
+1
 10
-1240
-608
-70
-40
-7.0
-1
-20
 1
 1
 1
@@ -263,75 +143,24 @@ GRAPHICS-WINDOW
 0
 0
 1
--70
-70
--40
-40
 0
+9
 0
+9
+1
+1
 1
 ticks
 30.0
 
 BUTTON
-17
+12
 35
-113
+133
 68
-Setup
-setup
+Riešenie
+riesenie
 NIL
-1
-T
-OBSERVER
-NIL
-S
-NIL
-NIL
-1
-
-BUTTON
-17
-87
-113
-120
-Add vertex
-add-vertex
-T
-1
-T
-OBSERVER
-NIL
-V
-NIL
-NIL
-1
-
-BUTTON
-129
-87
-226
-120
-Add edge
-add-edge
-T
-1
-T
-OBSERVER
-NIL
-E
-NIL
-NIL
-1
-
-BUTTON
-17
-139
-112
-172
-Remove vertex
-remove-vertex
-T
 1
 T
 OBSERVER
@@ -342,199 +171,87 @@ NIL
 1
 
 BUTTON
-128
-139
-226
-172
-Remove edge
-remove-edge
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-17
-190
-114
-223
-Relocate vertex
-relocate-vertex
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-128
-190
-226
-224
-Pick root
-pick-root
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-1
-
-BUTTON
-128
-35
-224
-68
-Reset
+12
+109
+134
+142
+Resetovanie
 reset
 NIL
 1
 T
 OBSERVER
 NIL
-R
 NIL
-NIL
-1
-
-BUTTON
-18
-243
-114
-276
-Run BFS
-go-BFS
-NIL
-1
-T
-OBSERVER
-NIL
-B
 NIL
 NIL
 1
 
 SLIDER
-37
-298
-209
-331
-delay
-delay
-0
-2
-0.5
-0.05
+11
+147
+135
+180
+velkost
+velkost
+3
+12
+9
+1
 1
 NIL
 HORIZONTAL
 
 BUTTON
-129
-244
-226
-277
-Run DFS
-go-DFS
+11
+72
+134
+105
+Nastavenie poľa
+setup
 NIL
 1
 T
 OBSERVER
 NIL
-D
+NIL
 NIL
 NIL
 1
 
-TEXTBOX
-75
-376
-225
-394
-NIL
+SLIDER
 11
-0.0
+185
+136
+218
+num-queens
+num-queens
+4
+16
+10
 1
+1
+NIL
+HORIZONTAL
 
-OUTPUT
-8
-351
-236
-569
-12
+BUTTON
+39
+225
+110
+258
+update
+update\n
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
-## WHAT IS IT?
-
-This is an application that demonstrates 2 basic algortihms for traversing or searching tree or graph: The Depth-first search (DFS) algorithm and the Breadth-first search (BFS) algorithm.You can search any graph you create by simply adding vertices and edges in the GUI.
-
-## HOW IT WORKS
-
-Vertices are represented by agents with a circle shape and edges are represented by links between two agents(vertices). You can add as much vertices as you want, create links and then just run of these algorithms. It will show you the entire course of the algorithm.
-
-## HOW TO USE IT
-
-Setup - it delets all agents from the previous model, clears up the surface and set up the new model to run
-
-Reset - it restores the searched graph to its original state, the roots remains unchanged
-
-Add vertex - it allows you to add a vertex by clicking in the green window
-
-Add edge - it adds an edge between two selected vertices. Click on one of the vertices, then the other and the edge itself adds
-
-Remove vertex - it removes the selected vertex
-
-Remove edge - it removes the selected edge. Click on one of the vertices, then the other and the edge between them  will be removed
-
-Relocate vertex - it allows you to move the vertices and make your graph easy on the eye
-
-Pick root - it allows you to pick the root = starting vertex, from which the searching will start
-
-Run BFS - it will launch the Breadth-first search algorithm
-
-Run DFS - it will launch the Depth-first search algorithm
-
-Most of these buttons also have their own hotkeys.
-
-Slider delay allows you to change the delay between the individual steps of the algorithm.
-
-The output window will show the course of the algorithm.
-
-## EXTENDING THE MODEL
-
-It would be great to allow the user to create the graph in the form of matrix and run the searching in this matrix.
-
-You could also try to implement a method that would automatically relocate vertices and make the graph easy on the eye.
-
-## NETLOGO FEATURES
-
-There is used LIFO and FIFO data structure using primitives as lput, fput, but-first, but-last etc. There are also used links and mouse interaction.
-
-## CREDITS AND REFERENCES
-
-Author: Jiri Lukas
-Email: jirilukas3@seznam.cz
-Adress: 
-   Street: Havlickova 628
-   Town: Mlada Boleslav
-   Zip code: 29301
-   State: Czech Republic
-   Continent: Europe
-Facebook link: https://www.facebook.com/jiri.lukas.7?fref=ts
-
-This is my second major project in NetLogo, the first was Checkers Ai vs. Ai (http://ccl.northwestern.edu/netlogo/models/community/Checkers). The third one (traffic simulation) is in the process. If you have any questions or comments please feel free to write me an email or contact me on facebook.
 @#$#@#$#@
 default
 true
@@ -592,6 +309,11 @@ Polygon -16777216 true false 162 80 132 78 134 135 209 135 194 105 189 96 180 89
 Circle -7500403 true true 47 195 58
 Circle -7500403 true true 195 195 58
 
+circle
+false
+0
+Circle -7500403 true true 0 0 300
+
 circle 2
 false
 0
@@ -604,6 +326,17 @@ false
 Polygon -7500403 true true 200 193 197 249 179 249 177 196 166 187 140 189 93 191 78 179 72 211 49 209 48 181 37 149 25 120 25 89 45 72 103 84 179 75 198 76 252 64 272 81 293 103 285 121 255 121 242 118 224 167
 Polygon -7500403 true true 73 210 86 251 62 249 48 208
 Polygon -7500403 true true 25 114 16 195 9 204 23 213 25 200 39 123
+
+crown
+false
+0
+Rectangle -7500403 true true 45 165 255 240
+Polygon -7500403 true true 45 165 30 60 90 165 90 60 132 166 150 60 169 166 210 60 210 165 270 60 255 165
+Circle -16777216 true false 222 192 22
+Circle -16777216 true false 56 192 22
+Circle -16777216 true false 99 192 22
+Circle -16777216 true false 180 192 22
+Circle -16777216 true false 139 192 22
 
 cylinder
 false
@@ -810,13 +543,6 @@ Polygon -10899396 true false 132 85 134 64 107 51 108 17 150 2 192 18 192 52 169
 Polygon -10899396 true false 85 204 60 233 54 254 72 266 85 252 107 210
 Polygon -7500403 true true 119 75 179 75 209 101 224 135 220 225 175 261 128 261 81 224 74 135 88 99
 
-vertex
-false
-0
-Circle -13345367 true false 0 0 300
-Circle -7500403 true true 15 15 270
-Circle -13345367 false false 15 15 270
-
 wheel
 false
 0
@@ -844,27 +570,17 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 5.0.3
+NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
-<experiments>
-  <experiment name="experiment" repetitions="1" runMetricsEveryStep="true">
-    <setup>setup</setup>
-    <go>go</go>
-    <metric>count turtles</metric>
-    <enumeratedValueSet variable="root">
-      <value value="15"/>
-    </enumeratedValueSet>
-  </experiment>
-</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
 0.0
--0.2 0 1.0 0.0
+-0.2 0 0.0 1.0
 0.0 1 1.0 0.0
-0.2 0 1.0 0.0
+0.2 0 0.0 1.0
 link direction
 true
 0

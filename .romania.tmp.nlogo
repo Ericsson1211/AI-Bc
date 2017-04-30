@@ -6,7 +6,6 @@ nodes-own [
   total-cost ;f(n)
   cost-to-this-node ;g(n)
   active
-  coloring-path-node
   depth-level
   parent
 ]
@@ -22,7 +21,6 @@ globals[
   connection
   last-node
   previous-node
-  coloring-path
   graph
   childrens
   fringe
@@ -51,9 +49,6 @@ to Calculate-Distance
   ]
 end
 
-to Create-Graph
-
-end
 
 to Create-Tree [depth]
   show depth
@@ -91,7 +86,8 @@ to Greedy-Search
 
   let parent-current-node 0
   ifelse(Search-Type  = "Tree")[
-    ask min-one-of (nodes with [active and not searched?])[distance-to-destination][
+ ;   while (
+    ask min-one-of (nodes with [active])[distance-to-destination][
       set connection edge-with current-node
       set current-node self
       show self
@@ -102,7 +98,7 @@ to Greedy-Search
         ]
         set last-node who
         set active false
-        set searched? true
+       ; set searched? true
         set color blue
         ask ([edge-neighbors] of current-node)[
           set active true
@@ -162,26 +158,37 @@ to Greedy-Search
       show "ag-postition"
       show ag-position
       set path remove-item 0 path ;remove first item from the list path
-      show "first path"
-      show "ag-position in path"
-      show position "ag-position" path
+      show "path"
+      show path
       if(not empty? path)[ ;if the list is not empty
         let next-edge-position-node (first path) ;set first node from list path into temporary variable
         show "next position"
+        ask next-edge-position-node
+        [
+          set color red
+        ]
         show next-edge-position-node
-        if(([who] of next-edge-position-node) != false)[
+        ifelse(is-edge? edge (ag-position) ([who] of next-edge-position-node) = true)[
+          show "path in ifelse"
+          show path
           ask edge (ag-position) ([who] of next-edge-position-node)[ ;ask edge of previous node and the first one from the list path
             set color red ;and set to red
           ]
+        ][if(not member? Start-Node path)[
+          show "not true"
+          set path fput Start-Node path
+          show path
+          ask edge ([who] of Start-Node) ([who] of next-edge-position-node)[ ;ask edge of previous node and the first one from the list path
+            set color red ;and set to red
+          ]
+        ]
         ]
       ]
-      ask ag [ ;set actual node red
-        set color red
-      ]
+
     ]
   ]
-
 end
+
 
 
 
@@ -651,7 +658,7 @@ CHOOSER
 Search-Type
 Search-Type
 "Graph" "Tree"
-0
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
