@@ -53,6 +53,7 @@ to Calculate-Distance
 end
 
 to Uniform-Cost-Search
+
   ; Calculate-Distance
    show "Finding Path with Unofrm cost search"
   let stack []
@@ -68,7 +69,7 @@ to Uniform-Cost-Search
         ;          show self
         set active true
         set stack lput self fringe
-        if (parent = 0)[
+        if (parent = 0 or self = Destination-Node)[
           set parent current-node
         ]
           set connection edge-with current-node
@@ -111,6 +112,7 @@ to Uniform-Cost-Search
   if(current-node = Destination-Node)
   [
     set path []
+    set current-node Destination-Node
     while[current-node != Start-Node]
     [
       set path fput current-node path
@@ -119,15 +121,14 @@ to Uniform-Cost-Search
       ]
     ]
     set path fput Start-node path
+    show "path"
+        show path
    Coloring-Path
   ]
 
 end
+
 to Breadth-First-Search
-
-end
-
-to Depth-First-Search
   ; show "Findig Path with Depth first Search"
   set fringe []
  ; let stack []
@@ -142,18 +143,17 @@ to Depth-First-Search
   ;  show fringe
   while[current-node != Destination-Node][
     let stack []
+    ;set fringe []
     set x x + 1
     show "Finding Path with Depth First Search"
     ask current-node[
       set searched? true
       show "current"
       show self
+      set color green
     ]
     ask ([edge-neighbors] of current-node)[
       set active true
-      if(depth-level = 0)[
-        set depth-level x
-      ]
       if(searched? = false)[
         set stack lput self stack
       ]
@@ -161,28 +161,18 @@ to Depth-First-Search
         set parent current-node ;set the node where we came from
       ]
     ]
-    set stack sort-on [name?](nodes with [searched? = false and active])
+    ;set stack sort-on [name?](nodes with [searched? = false and active])
+    set stack sort-by [ [name?1 name?2] -> name?1 < name?2 ] stack
+    ;set stack reverse stack
     show "stack"
     show stack
-    set fringe fput stack fringe
-    show "fringe"
-    show fringe
+    ;set fringe fput stack fringe
+
     let need-to-search-fringe true
-    foreach fringe [ [ag] -> ;ask every node in the list path
-      if(need-to-search-fringe)[
-        if(not empty? ag)[
-          show "ag"
-          show ag
-          ask first ag[
-            show "self"
-            show self
-            set need-to-search-fringe false
-          ]
-          set ag remove current-node ag
-          show "agafter"
-          show ag
-        ]
-      ]
+    foreach stack [ [ag] -> ;ask every node in the list path
+      if(not member? ag fringe)[
+      set fringe fput ag fringe
+    ]
     ]
     foreach path [ [ag] -> ;ask every node in the list path
       ask ag[
@@ -202,34 +192,145 @@ to Depth-First-Search
       ]
     ]
     set path lput current-node path
-    show "x"
-    show x
+    ask first fringe [
+      set current-node self
+    ]
+    set fringe remove current-node fringe
+    show "fringe"
+    show fringe
     show "stack"
     show stack
 
   ]
   if(current-node = Destination-Node)
   [
-    set path fput Start-Node path
+   ; set path []
+;    while[current-node != Start-Node]
+;    [
+;      set path fput current-node path
+;      ask current-node[
+;        set current-node [parent] of self
+;      ]
+;    ]
+    set path fput Start-node path
+    set path lput Destination-Node path
+   Coloring-Path
+  ]
+end
+
+to Depth-First-Search
+  ; show "Findig Path with Depth first Search"
+  set fringe []
+ ; let stack []
+  let x 0
+  let parent-current-node 0
+  ;  ask nodes
+  ;  [
+  ;    set fringe lput self fringe
+  ;    set active true
+  ;  ]
+  ;  set fringe sort-on [name?] (nodes with [active])
+  ;  show fringe
+  while[current-node != Destination-Node][
+    let stack []
+    ;set fringe []
+    set x x + 1
+    show "Finding Path with Depth First Search"
+    ask current-node[
+      set searched? true
+      show "current"
+      show self
+      set color green
+    ]
+    ask ([edge-neighbors] of current-node)[
+      set active true
+      if(searched? = false)[
+        set stack lput self stack
+      ]
+      if (parent = 0 )[
+        set parent current-node ;set the node where we came from
+      ]
+    ]
+    ;set stack sort-on [name?](nodes with [searched? = false and active])
+    set stack sort-by [ [name?1 name?2] -> name?1 < name?2 ] stack
+    set stack reverse stack
+    show "stack"
+    show stack
+    ;set fringe fput stack fringe
+
+    let need-to-search-fringe true
+    foreach stack [ [ag] -> ;ask every node in the list path
+      if(not member? ag fringe)[
+      set fringe fput ag fringe
+    ]
+    ]
+    foreach path [ [ag] -> ;ask every node in the list path
+      ask ag[
+        ;            show "[parent] of self"
+        ;            show [parent] of self
+        ;            show "parent-current-node"
+        ;            show parent-current-node
+        ;            show "self"
+        ;            show self
+        ;            show "Start-node"
+        ;            show Start-Node
+        if([parent] of self = parent-current-node)[ ; if there are two nodes in path with the same parent, remove the second one
+          set path remove self path
+          ;              show "selfone"
+          ;              show self
+        ]
+      ]
+    ]
+    set path lput current-node path
+    ask first fringe [
+      set current-node self
+    ]
+    set fringe remove current-node fringe
+    show "fringe"
+    show fringe
+    show "stack"
+    show stack
+
+  ]
+  if(current-node = Destination-Node)
+  [
+   ; set path []
+;    while[current-node != Start-Node]
+;    [
+;      set path fput current-node path
+;      ask current-node[
+;        set current-node [parent] of self
+;      ]
+;    ]
+    set path fput Start-node path
+    set path lput Destination-Node path
    Coloring-Path
   ]
 end
 
 to Greedy-Search
- reset-timer
+  reset-timer
+  let counter 0
   set fringe []
   set path lput Start-Node path
   let parent-current-node 0
   while[current-node != Destination-Node][ ;ask if the destination is finded
+    set counter counter + 1
+    if(counter > 30)[
+      show "Nenasla sa cesta"
+      ask Start-node[
+        set color red
+      ]
+      stop
+
+    ]
     ifelse(Search-Type  = "Tree")[
       show "Finding Path with Greedy in tree"
       ask current-node [
         set color green
         set searched? true
 
-        ask ([edge-neighbors] of current-node)[ ;ask every neighbor of the current-node
-          ;          show "neighbors"
-          ;          show self
+        ask ([edge-neighbors] of current-node)[
           set active true ;setting neighbors active
           set fringe lput self fringe
           set color green
@@ -237,9 +338,7 @@ to Greedy-Search
             set parent current-node ;set the node where we came from
           ]
         ]
-        set fringe sort-on [distance-to-destination] (nodes with [active]) ;sort all active nodes by their g(n)
-;        show "fringe"
-;        show fringe
+        set fringe sort-on [distance-to-destination] (nodes with [active])
         ask first fringe[ ;ask node with the lowest g(n)
           set current-node self
           ;set color red
@@ -247,59 +346,28 @@ to Greedy-Search
         ]
         foreach path [ [ag] -> ;ask every node in the list path
           ask ag[
-;            show "[parent] of self"
-;            show [parent] of self
-;            show "parent-current-node"
-;            show parent-current-node
-;            show "self"
-;            show self
-;            show "Start-node"
-;            show Start-Node
             if([parent] of self = parent-current-node)[ ; if there are two nodes in path with the same parent, remove the second one
               set path remove self path
-;              show "selfone"
-;              show self
             ]
           ]
         ]
-        set path lput current-node path ; add current-node to list path
-;        show "path"
-;        show path
+        set path lput current-node path
       ]
-;    ask ([edge-neighbors] of current-node)[
-;          set active true
-;        ]
-;    ask min-one-of (nodes with [active])[distance-to-destination][
-;      set connection edge-with current-node
-;      set current-node self
-;      show "connection"
-;      show connection
-;      show self
-;        ask connection [
-;          set color red
-;          set thickness 0.2
-;        ]
-;        set last-node who
-;        set active false
-;       ; set searched? true
-;        set color blue
-;    ]
-  ][
-    show "Finding Path with Greedy in Graph"
-     ; set fringe []
+    ][
+      show "Finding Path with Greedy in Graph"
+      ; set fringe []
       ask current-node [
         set color green
         set searched? true
         ask ([edge-neighbors] of current-node)[
-;          show "neighbors"
-;          show self
+          ;          show "neighbors"
+          ;          show self
           set active true
           set color green
           set fringe lput self fringe
           if (parent = 0)[
-          set parent current-node
+            set parent current-node
           ]
-          ;let x-sorted MAP [[distance-to-destination] of ?] fringe
         ]
         set fringe sort-on [distance-to-destination] (nodes with [active and not searched?]) ;sorting only not searched nodes cause we are working with tree
         ask first fringe[
@@ -309,34 +377,27 @@ to Greedy-Search
         ]
         foreach path [ [ag] ->
           ask ag[
-;              show "[parent] of self"
-;              show [parent] of self
-;              show "parent-current-node"
-;              show parent-current-node
-              if(self = Start-Node)[
-                set parent 0
-              ]
-              if([parent] of self = parent-current-node)[
-                set path remove self path
-;                show "selfone"
-;                show self
-              ]
+            if(self = Start-Node)[
+              set parent 0
             ]
+            if([parent] of self = parent-current-node)[
+              set path remove self path
+            ]
+          ]
         ]
         set path lput current-node path
-;        show "path"
-;        show path
       ]
     ]
-
   ]
   if(current-node = Destination-Node)
   [
+
     show "Seconds"
     show timer
 
    Coloring-Path
   ]
+
 end
 
 to Coloring-Path
@@ -906,7 +967,7 @@ CHOOSER
 Search-Type
 Search-Type
 "Graph" "Tree"
-1
+0
 
 BUTTON
 29
