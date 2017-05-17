@@ -171,7 +171,7 @@ to Breadth-First-Search
     let need-to-search-fringe true
     foreach stack [ [ag] -> ;ask every node in the list path
       if(not member? ag fringe)[
-      set fringe fput ag fringe
+      set fringe lput ag fringe
     ]
     ]
     foreach path [ [ag] -> ;ask every node in the list path
@@ -204,15 +204,17 @@ to Breadth-First-Search
   ]
   if(current-node = Destination-Node)
   [
-   ; set path []
-;    while[current-node != Start-Node]
-;    [
-;      set path fput current-node path
-;      ask current-node[
-;        set current-node [parent] of self
-;      ]
-;    ]
+   set path []
+    set current-node Destination-Node
+    while[current-node != Start-Node]
+    [
+      set path fput current-node path
+      ask current-node[
+        set current-node [parent] of self
+      ]
+    ]
     set path fput Start-node path
+   ; set path fput Start-node path
     set path lput Destination-Node path
    Coloring-Path
   ]
