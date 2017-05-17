@@ -29,7 +29,10 @@ globals[
 
 to Calculate-Distance
   ask nodes [
-    set distance-to-destination distance Destination-Node
+    set distance-to-destination distance Destination-Node * 10
+    set distance-to-destination (precision distance-to-destination 0)
+;    show name?
+;    show distance-to-destination
   ]
   ask Start-Node
   [
@@ -42,100 +45,57 @@ to Calculate-Distance
     set last-node who ;asking node number for edge asking
    ; set path lput self path
     set previous-node self
-    set depth-level 1
+    set depth-level 0
   ]
   ask Destination-Node [
     set color red
   ]
 end
 
-
-to Create-Tree [depth]
-  show depth
-  ask (nodes with [depth-level = depth])[
-    show "self"
-    show self
-    show (([edge-neighbors] of self) with [depth-level = "0"])
-    ;set childrens lput ([edge-neighbors] of self) childrens
-
-    ;set childrens lput self childrens
-    ;show childrens
-    ask ([edge-neighbors] of self)[
-      show self
-      set childrens lput self childrens
-      ifelse (not member? (nodes with [depth-level = depth]) childrens)[
-      set depth-level (depth + 1)
-      Create-Tree (depth + 1)
-      ][
-        Create-Tree (depth)
-      ]
-      ;set ([childrens] of current-node) fput self ([childrens] of current-node)
-    ]
-  ]
-end
-
-to Depth-First-Search
+to Uniform-Cost-Search
   ; Calculate-Distance
-
-end
-
-to Greedy-Search
-  show "Finding Path"
+   show "Finding Path with Unofrm cost search"
+  let stack []
   set fringe []
   set path lput Start-Node path
-
   let parent-current-node 0
-  ifelse(Search-Type  = "Tree")[
- ;   while (
-    ask min-one-of (nodes with [active])[distance-to-destination][
-      set connection edge-with current-node
-      set current-node self
-      show self
-      ifelse(current-node != Start-Node)[
-        ask edge last-node who [
-          set color red
-          set thickness 0.2
-        ]
-        set last-node who
-        set active false
-       ; set searched? true
-        set color blue
-        ask ([edge-neighbors] of current-node)[
-          set active true
-        ]
-      ][
-        set color red
-      ]
-    ]
-  ][
-    while[current-node != Destination-Node][
-
-     ; set fringe []
-      ask current-node [
-        set searched? true
-        ask ([edge-neighbors] of current-node)[
-;          show "neighbors"
-;          show self
-          set active true
-          set fringe lput self fringe
-          if (parent = 0)[
+  while[current-node != Destination-Node][
+    ask current-node [
+      set color green
+      set searched? true
+      ask ([edge-neighbors] of current-node)[
+        ;          show "neighbors"
+        ;          show self
+        set active true
+        set stack lput self fringe
+        if (parent = 0)[
           set parent current-node
-          ]
-          ;let x-sorted MAP [[distance-to-destination] of ?] fringe
         ]
-        set fringe sort-on [distance-to-destination] (nodes with [active and not searched?])
-        ask first fringe[
-          set current-node self
-          ;set color red
-          set parent-current-node ([parent] of current-node)
-        ]
-        foreach path [ [ag] ->
-          ask ag
-            [
-              show "[parent] of self"
-              show [parent] of self
+          set connection edge-with current-node
+          set cost-to-this-node [value] of connection + [cost-to-this-node] of current-node
+          ;        set total-cost (cost-to-this-node) + distance-to-destination
+
+      ]
+
+      set stack sort-on [cost-to-this-node] (nodes with [active and not searched?])
+      show "stackkkkk"
+      show stack
+      show "fringe"
+      show fringe
+      ask first stack[
+        set current-node self
+        ;set color red
+        set parent-current-node ([parent] of current-node)
+      ]
+      foreach path [ [ag] ->
+        ask ag[
+          show "[parent] of self"
+          show [parent] of self
               show "parent-current-node"
               show parent-current-node
+              if(self = Start-Node)[
+                set parent 0
+              ]
               if([parent] of self = parent-current-node)[
                 set path remove self path
                 show "selfone"
@@ -148,123 +108,410 @@ to Greedy-Search
         show path
       ]
     ]
+  if(current-node = Destination-Node)
+  [
+    set path []
+    while[current-node != Start-Node]
+    [
+      set path fput current-node path
+      ask current-node[
+        set current-node [parent] of self
+      ]
+    ]
+    set path fput Start-node path
+   Coloring-Path
+  ]
+
+end
+to Breadth-First-Search
+
+end
+
+to Depth-First-Search
+  ; show "Findig Path with Depth first Search"
+  set fringe []
+ ; let stack []
+  let x 0
+  let parent-current-node 0
+  ;  ask nodes
+  ;  [
+  ;    set fringe lput self fringe
+  ;    set active true
+  ;  ]
+  ;  set fringe sort-on [name?] (nodes with [active])
+  ;  show fringe
+  while[current-node != Destination-Node][
+    let stack []
+    set x x + 1
+    show "Finding Path with Depth First Search"
+    ask current-node[
+      set searched? true
+      show "current"
+      show self
+    ]
+    ask ([edge-neighbors] of current-node)[
+      set active true
+      if(depth-level = 0)[
+        set depth-level x
+      ]
+      if(searched? = false)[
+        set stack lput self stack
+      ]
+      if (parent = 0 )[
+        set parent current-node ;set the node where we came from
+      ]
+    ]
+    set stack sort-on [name?](nodes with [searched? = false and active])
+    show "stack"
+    show stack
+    set fringe fput stack fringe
+    show "fringe"
+    show fringe
+    let need-to-search-fringe true
+    foreach fringe [ [ag] -> ;ask every node in the list path
+      if(need-to-search-fringe)[
+        if(not empty? ag)[
+          show "ag"
+          show ag
+          ask first ag[
+            show "self"
+            show self
+            set need-to-search-fringe false
+          ]
+          set ag remove current-node ag
+          show "agafter"
+          show ag
+        ]
+      ]
+    ]
+    foreach path [ [ag] -> ;ask every node in the list path
+      ask ag[
+        ;            show "[parent] of self"
+        ;            show [parent] of self
+        ;            show "parent-current-node"
+        ;            show parent-current-node
+        ;            show "self"
+        ;            show self
+        ;            show "Start-node"
+        ;            show Start-Node
+        if([parent] of self = parent-current-node)[ ; if there are two nodes in path with the same parent, remove the second one
+          set path remove self path
+          ;              show "selfone"
+          ;              show self
+        ]
+      ]
+    ]
+    set path lput current-node path
+    show "x"
+    show x
+    show "stack"
+    show stack
 
   ]
   if(current-node = Destination-Node)
   [
-    show "Path finded"
-    foreach path [[ag] -> ;ask for every node in the list path
-      let ag-position ([who] of ag) ;set number of the node
-      show "ag-postition"
-      show ag-position
-      set path remove-item 0 path ;remove first item from the list path
-      show "path"
-      show path
-      if(not empty? path)[ ;if the list is not empty
-        let next-edge-position-node (first path) ;set first node from list path into temporary variable
-        show "next position"
-        ask next-edge-position-node
-        [
-          set color red
-        ]
-        show next-edge-position-node
-        ifelse(is-edge? edge (ag-position) ([who] of next-edge-position-node) = true)[
-          show "path in ifelse"
-          show path
-          ask edge (ag-position) ([who] of next-edge-position-node)[ ;ask edge of previous node and the first one from the list path
-            set color red ;and set to red
-          ]
-        ][if(not member? Start-Node path)[
-          show "not true"
-          set path fput Start-Node path
-          show path
-          ask edge ([who] of Start-Node) ([who] of next-edge-position-node)[ ;ask edge of previous node and the first one from the list path
-            set color red ;and set to red
-          ]
-        ]
-        ]
-      ]
-
-    ]
+    set path fput Start-Node path
+   Coloring-Path
   ]
 end
 
+to Greedy-Search
+ reset-timer
+  set fringe []
+  set path lput Start-Node path
+  let parent-current-node 0
+  while[current-node != Destination-Node][ ;ask if the destination is finded
+    ifelse(Search-Type  = "Tree")[
+      show "Finding Path with Greedy in tree"
+      ask current-node [
+        set color green
+        set searched? true
 
+        ask ([edge-neighbors] of current-node)[ ;ask every neighbor of the current-node
+          ;          show "neighbors"
+          ;          show self
+          set active true ;setting neighbors active
+          set fringe lput self fringe
+          set color green
+          if (parent = 0 )[
+            set parent current-node ;set the node where we came from
+          ]
+        ]
+        set fringe sort-on [distance-to-destination] (nodes with [active]) ;sort all active nodes by their g(n)
+;        show "fringe"
+;        show fringe
+        ask first fringe[ ;ask node with the lowest g(n)
+          set current-node self
+          ;set color red
+          set parent-current-node ([parent] of current-node) ;set the parent of the current node for compare
+        ]
+        foreach path [ [ag] -> ;ask every node in the list path
+          ask ag[
+;            show "[parent] of self"
+;            show [parent] of self
+;            show "parent-current-node"
+;            show parent-current-node
+;            show "self"
+;            show self
+;            show "Start-node"
+;            show Start-Node
+            if([parent] of self = parent-current-node)[ ; if there are two nodes in path with the same parent, remove the second one
+              set path remove self path
+;              show "selfone"
+;              show self
+            ]
+          ]
+        ]
+        set path lput current-node path ; add current-node to list path
+;        show "path"
+;        show path
+      ]
+;    ask ([edge-neighbors] of current-node)[
+;          set active true
+;        ]
+;    ask min-one-of (nodes with [active])[distance-to-destination][
+;      set connection edge-with current-node
+;      set current-node self
+;      show "connection"
+;      show connection
+;      show self
+;        ask connection [
+;          set color red
+;          set thickness 0.2
+;        ]
+;        set last-node who
+;        set active false
+;       ; set searched? true
+;        set color blue
+;    ]
+  ][
+    show "Finding Path with Greedy in Graph"
+     ; set fringe []
+      ask current-node [
+        set color green
+        set searched? true
+        ask ([edge-neighbors] of current-node)[
+;          show "neighbors"
+;          show self
+          set active true
+          set color green
+          set fringe lput self fringe
+          if (parent = 0)[
+          set parent current-node
+          ]
+          ;let x-sorted MAP [[distance-to-destination] of ?] fringe
+        ]
+        set fringe sort-on [distance-to-destination] (nodes with [active and not searched?]) ;sorting only not searched nodes cause we are working with tree
+        ask first fringe[
+          set current-node self
+          ;set color red
+          set parent-current-node ([parent] of current-node)
+        ]
+        foreach path [ [ag] ->
+          ask ag[
+;              show "[parent] of self"
+;              show [parent] of self
+;              show "parent-current-node"
+;              show parent-current-node
+              if(self = Start-Node)[
+                set parent 0
+              ]
+              if([parent] of self = parent-current-node)[
+                set path remove self path
+;                show "selfone"
+;                show self
+              ]
+            ]
+        ]
+        set path lput current-node path
+;        show "path"
+;        show path
+      ]
+    ]
+
+  ]
+  if(current-node = Destination-Node)
+  [
+    show "Seconds"
+    show timer
+
+   Coloring-Path
+  ]
+end
+
+to Coloring-Path
+  show "Path finded"
+    foreach path [[ag] -> ;ask for every node in the list path
+      let ag-position ([who] of ag) ;set number of the node
+;      show "ag-postition"
+;      show ag-position
+      set path remove-item 0 path ;remove first item from the list path
+;      show "path"
+;      show path
+
+      if(not empty? path)[ ;if the list is not empty
+        let next-edge-position-node (first path) ;set first node from list path into temporary variable
+;        show "next position"
+        ask next-edge-position-node [
+          set color red
+        ]
+       ; show next-edge-position-node
+        ifelse(is-edge? edge (ag-position) ([who] of next-edge-position-node) = true)[
+;          show "path in ifelse"
+;          show path
+          ask edge (ag-position) ([who] of next-edge-position-node)[ ;ask edge of previous node and the first one from the list path
+            set color red ;and set to red
+            set thickness 0.2
+          ]
+        ][if(not member? Start-Node path)[
+;          show "not true"
+          set path fput Start-Node path
+          show path
+          ifelse(not is-edge? edge([who] of Start-Node) ([who] of next-edge-position-node))[
+            set path remove next-edge-position-node path
+          ][
+          ask edge ([who] of Start-Node) ([who] of next-edge-position-node)[ ;ask edge of previous node and the first one from the list path
+            set color red ;and set to red
+            set thickness 0.2
+          ]
+              ]
+        ]
+        ]
+      ]
+    ]
+end
 
 
 to A*-Search
   ; Calculate-Distance
+  reset-timer
 
-  ask min-one-of (nodes with [active and not searched?])[total-cost]
-  [
-    set current-node self
-    show "current-node"
-    show current-node
-    set active false
-    set searched? true
-    set color blue
-    set path lput current-node path
-  ]
+  set fringe []
+  set path lput Start-Node path
+  let parent-current-node 0
+  while[current-node != Destination-Node][
+     show "Finding Path with A*"
+      ask current-node [
+        set searched? true
+        set color green
+        ask ([edge-neighbors] of current-node)[
+;          show "neighbors"
+;          show self
 
-  ifelse(current-node != Destination-Node)[
-    ask ([edge-neighbors] of current-node)
-    [
-      ; let searching []
-      if([searched?] of self = false)[
-;        show "self"
-;        show self
-        set active true
-        set color yellow
-        let location self
-        set connection edge-with current-node
-;        show "connection"
-;        show connection
-        set cost-to-this-node [value] of connection + [cost-to-this-node] of current-node
+          set active true
+          set fringe lput self fringe
+          if (parent = 0)[
+          set parent current-node
+          set connection edge-with current-node
+          set cost-to-this-node [value] of connection + [cost-to-this-node] of current-node
         set total-cost (cost-to-this-node) + distance-to-destination
-        set path lput connection path
-       ; set path lput self path
+          ]
+        ]
 
-        ; set searching lput self ([searching] of current-node)
-        ;A*-Search
+        set fringe sort-on [total-cost] (nodes with [active and not searched?])
+        ask first fringe[
+          set current-node self
+          ;set color red
+          set parent-current-node ([parent] of current-node)
+        ]
+        foreach path [ [ag] ->
+          ask ag[
+;              show "[parent] of self"
+;              show [parent] of self
+;              show "parent-current-node"
+;              show parent-current-node
+              if(self = Start-Node)[
+                set parent 0
+              ]
+              if([parent] of self = parent-current-node)[
+                set path remove self path
+;                show "selfone"
+;                show self
+              ]
+            ]
+        ]
+        set path lput current-node path
+;        show "path"
+;        show path
       ]
     ]
-    set path remove connection path
-    show "current-node"
-    show current-node
-    show "previous-node"
-    show previous-node
-;    if(current-node != Start-Node)[
-;      ask edge ([who] of current-node) ([who] of previous-node)
-;      [
-;        set color red
-;      ]
-;    ]
-    ;  let remove-edge-of-connection ([neighbors] of connection)
-    A*-Search
-
-  ][;and not any? nodes with [active])[
-    show "Path finded"
-    ask Destination-Node [
-      set color red
-    ]
-    ask Start-Node [
-      set color red
-    ]
-
-    show ([who] of current-node)
-    show ([who] of previous-node)
-
-;    ask edge ([who] of current-node) ([who] of previous-node)
-;      [
-;        show self
-;        set color red
-;
-;    ]
-
-
-
+  if(current-node = Destination-Node)
+  [
+    show "Seconds"
+    show timer
+   Coloring-Path
   ]
 
+;  ask min-one-of (nodes with [active and not searched?])[total-cost]
+;  [
+;    set current-node self
+;    show "current-node"
+;    show current-node
+;    set active false
+;    set searched? true
+;    set color blue
+;    set path lput current-node path
+;  ]
+;
+;  ifelse(current-node != Destination-Node)[
+;    ask ([edge-neighbors] of current-node)
+;    [
+;      ; let searching []
+;      if([searched?] of self = false)[
+;;        show "self"
+;;        show self
+;        set active true
+;        set color yellow
+;        let location self
+;        set connection edge-with current-node
+;;        show "connection"
+;;        show connection
+;        set cost-to-this-node [value] of connection + [cost-to-this-node] of current-node
+;        set total-cost (cost-to-this-node) + distance-to-destination
+;        set path lput connection path
+;       ; set path lput self path
+;
+;        ; set searching lput self ([searching] of current-node)
+;        ;A*-Search
+;      ]
+;    ]
+;    set path remove connection path
+;    show "current-node"
+;    show current-node
+;    show "previous-node"
+;    show previous-node
+;;    if(current-node != Start-Node)[
+;;      ask edge ([who] of current-node) ([who] of previous-node)
+;;      [
+;;        set color red
+;;      ]
+;;    ]
+;    ;  let remove-edge-of-connection ([neighbors] of connection)
+;    A*-Search
+;
+;  ][;and not any? nodes with [active])[
+;    show "Path finded"
+;    ask Destination-Node [
+;      set color red
+;    ]
+;    ask Start-Node [
+;      set color red
+;    ]
+;
+;    show ([who] of current-node)
+;    show ([who] of previous-node)
+;
+;;    ask edge ([who] of current-node) ([who] of previous-node)
+;;      [
+;;        show self
+;;        set color red
+;;
+;;    ]
+;
+;
+;
+;  ]
+;
 
 
 
@@ -658,6 +905,40 @@ CHOOSER
 Search-Type
 Search-Type
 "Graph" "Tree"
+1
+
+BUTTON
+29
+441
+191
+474
+NIL
+Breadth-First-Search
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+27
+497
+193
+530
+NIL
+Uniform-Cost-Search
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
 1
 
 @#$#@#$#@

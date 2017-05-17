@@ -342,14 +342,14 @@ end
 
 to play  ;; Observer Forever Button
          ;; Only true at this point if you died and are trying to continue
-  dfs
+ ; dfs
   if dead?
   [stop]
   every (1 - difficulty / 5)[
     if ( level != 4 )[
-      ; dfs
-      ;      ask pacmans
-      ;   move_to_next_dot]
+     ;  dfs
+            ask pacmans[
+         move_to_next_dot]
     ]
   ]
   if floor (score / 35000) > extra-lives
@@ -499,7 +499,7 @@ GRAPHICS-WINDOW
 243
 10
 440
-208
+166
 -1
 -1
 21.0
@@ -514,8 +514,8 @@ GRAPHICS-WINDOW
 1
 -4
 4
--4
-4
+-3
+3
 0
 0
 0
@@ -573,7 +573,7 @@ INPUTBOX
 99
 78
 Level
-5.0
+1.0
 1
 0
 Number
